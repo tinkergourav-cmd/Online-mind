@@ -1,0 +1,20 @@
+{
+  "project_type": "React single-page application (mind-mapping tool)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm",
+  "test_framework": "None (no test files exist in this project)",
+  "build_command": "cd /projects/sandbox/Online-mind && npm run build",
+  "test_command": "No tests exist; verification is build-only",
+  "verification_instructions": "1. Run 'npm run build' to confirm no compilation errors. 2. Verify the firebase.js and firestoreService.js files are syntactically correct. 3. Confirm App.jsx still imports and uses localStorage as before.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/Online-mind && npm install",
+  "environment_constraints": "OPEN_INTERNET network mode - full npm install and external package access available. Node.js 22 available via nvm.",
+  "contribution_requirements": "No CONTRIBUTING.md exists. Keep changes minimal and non-breaking.",
+  "key_patterns": "Single large App.jsx (5000+ lines) contains all state management. Uses useState/useRef/useEffect hooks. Save logic: useEffect watches [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, initialized, activeProjectId], updates projects state, then debounced (500ms) localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects)). Also a separate useEffect for storedPassword changes. A saveTimerRef is used for debouncing. projectsRef keeps projects in sync for the debounced write callback. Initialization loads from localStorage in a useEffect with empty deps array.",
+  "relevant_files": [
+    "/projects/sandbox/Online-mind/src/App.jsx",
+    "/projects/sandbox/Online-mind/package.json",
+    "/projects/sandbox/Online-mind/src/main.jsx"
+  ],
+  "directory_structure": "Root: index.html, package.json, vite.config.js, tailwind/postcss configs. src/: App.jsx (main component, 5000+ lines), MiniMap.jsx, TaskPanel.jsx, main.jsx (entry point), index.css. public/: vite.svg."
+}
