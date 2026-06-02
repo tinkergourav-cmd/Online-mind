@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Install firebase package and create Firebase initialization + Firestore service layer, then integrate into App.jsx to persist data to Firestore alongside existing localStorage logic.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Run 'npm install firebase' in /projects/sandbox/Online-mind to add the firebase SDK dependency.",
     "Create /projects/sandbox/Online-mind/src/firebase.js that initializes Firebase with the provided config and exports the Firestore db instance. Use modular Firebase v9+ imports (import { initializeApp } from 'firebase/app'; import { getFirestore } from 'firebase/firestore').",
@@ -25,5 +25,5 @@
     "Run 'cd /projects/sandbox/Online-mind && npm run build' and confirm it exits with code 0 and produces dist/ output"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build succeeds cleanly. Firebase SDK adds ~663KB to the bundle (total JS). The firestoreService uses a module-level 2500ms debounce timer so rapid saves from the 500ms localStorage debounce are coalesced. defaultProjectId is accessible as component-level state in the save useEffects."
 }
