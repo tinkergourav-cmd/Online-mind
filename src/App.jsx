@@ -3945,6 +3945,25 @@ export default function WorkflowApp() {
             <Redo2 className="w-4 h-4" />
           </button>
 
+          {/* Sync Status Indicator - next to undo/redo */}
+          {syncStatus !== 'idle' && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-all duration-300 ${
+              syncStatus === 'saving' ? 'bg-blue-50 text-blue-600 border border-blue-200' :
+              syncStatus === 'saved' ? 'bg-green-50 text-green-600 border border-green-200' :
+              syncStatus === 'error' ? 'bg-orange-50 text-orange-600 border border-orange-200' :
+              'bg-slate-50 text-slate-500 border border-slate-200'
+            }`} title={syncStatus === 'saving' ? 'Saving to cloud...' : syncStatus === 'saved' ? 'Saved to cloud' : 'Cloud sync failed - working offline'}>
+              {syncStatus === 'saving' && <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />}
+              {syncStatus === 'saved' && <Cloud className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+              {syncStatus === 'error' && <CloudOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+              <span className="hidden sm:inline">
+                {syncStatus === 'saving' && 'Saving...'}
+                {syncStatus === 'saved' && 'Saved'}
+                {syncStatus === 'error' && 'Offline'}
+              </span>
+            </div>
+          )}
+
           <div className="w-px h-5 sm:h-6 bg-slate-200 mx-0.5 sm:mx-1"></div>
 
           <input type="file" accept=".json" ref={fileInputRef} onChange={handleImport} className="hidden" />
@@ -5356,27 +5375,6 @@ export default function WorkflowApp() {
             </div>
           </div>
         </>
-      )}
-
-      {/* --- Sync Status Indicator --- */}
-      {syncStatus !== 'idle' && (
-        <div className={`fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-[9999] transition-opacity duration-500 ${syncStatus === 'saved' ? 'opacity-60' : 'opacity-100'}`}>
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg border backdrop-blur-sm ${
-            syncStatus === 'saving' ? 'bg-white/95 border-blue-200 text-blue-700' :
-            syncStatus === 'saved' ? 'bg-white/95 border-green-200 text-green-700' :
-            syncStatus === 'error' ? 'bg-white/95 border-orange-200 text-orange-700' :
-            'bg-white/95 border-slate-200 text-slate-600'
-          }`}>
-            {syncStatus === 'saving' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {syncStatus === 'saved' && <Cloud className="w-3.5 h-3.5" />}
-            {syncStatus === 'error' && <CloudOff className="w-3.5 h-3.5" />}
-            <span>
-              {syncStatus === 'saving' && 'Saving...'}
-              {syncStatus === 'saved' && 'Saved'}
-              {syncStatus === 'error' && 'Offline'}
-            </span>
-          </div>
-        </div>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
