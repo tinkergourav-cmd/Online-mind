@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Add sync status indicator (saved/saving/offline pill badge) and auto-refresh from Firestore on tab visibility change.",
+  "status": "in_progress",
+  "steps": [
+    "Modify firestoreService.js: add status callback support to saveToFirestore, add lastSavedTimestamp to saved data, export loadFromFirestore for refresh usage.",
+    "Modify App.jsx imports: add Cloud, CloudOff, Loader2 from lucide-react.",
+    "Add syncStatus state and lastCheckTimestamp ref to App.jsx.",
+    "Modify save calls to pass status callback and track sync state.",
+    "Add SyncIndicator component rendered as fixed-position pill in bottom-left corner.",
+    "Add visibility-change listener for auto-refresh from Firestore.",
+    "Verify build succeeds."
+  ],
+  "acceptance_criteria": [
+    "Sync indicator shows Saved/Saving/Offline states with appropriate icons and colors",
+    "Indicator auto-fades after a few seconds in Saved state",
+    "Auto-refresh checks Firestore when tab becomes visible (with 10s minimum interval)",
+    "lastSavedTimestamp is included in Firestore document",
+    "npm run build succeeds with no errors",
+    "Existing functionality is not broken"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/Online-mind && npm run build' and confirm it exits with code 0"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

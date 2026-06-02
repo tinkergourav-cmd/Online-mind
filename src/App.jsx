@@ -7,7 +7,7 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  CheckSquare, ListTodo
+  CheckSquare, ListTodo, Cloud, CloudOff, Loader2
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
@@ -451,6 +451,21 @@ export default function WorkflowApp() {
   const saveTimerRef = useRef(null);
   const projectsRef = useRef([]);
 
+  // --- Sync Status State ---
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const syncFadeTimerRef = useRef(null);
+  const lastFirestoreCheckRef = useRef(0);
+  const lastSavedTimestampRef = useRef(0);
+
+  // --- Sync Status Handler ---
+  const handleSyncStatus = useCallback((status) => {
+    setSyncStatus(status);
+    if (syncFadeTimerRef.current) clearTimeout(syncFadeTimerRef.current);
+    if (status === 'saved') {
+      syncFadeTimerRef.current = setTimeout(() => setSyncStatus('idle'), 3000);
+    }
+  }, []);
+
   // --- Touch Gesture Refs (Pinch-to-Zoom) ---
   const touchRef = useRef({ isPinching: false, lastDist: 0, lastMidX: 0, lastMidY: 0 });
   const nodeTapRef = useRef(null);
@@ -594,6 +609,10 @@ export default function WorkflowApp() {
           localStorage.setItem('nexus-app-state', JSON.stringify(firestoreData.projects));
           if (firestoreData.activeProjectId) localStorage.setItem('nexus-active-project', firestoreData.activeProjectId);
           if (firestoreData.defaultProjectId) localStorage.setItem('nexus-default-project', firestoreData.defaultProjectId);
+          // Track the loaded timestamp for auto-refresh comparison
+          if (firestoreData.lastSavedTimestamp) {
+            lastSavedTimestampRef.current = firestoreData.lastSavedTimestamp;
+          }
         }
         // Continue with existing localStorage loading logic below (which now has Firestore data cached)
 
@@ -826,7 +845,7 @@ export default function WorkflowApp() {
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
-        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId }, handleSyncStatus);
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
@@ -846,7 +865,7 @@ export default function WorkflowApp() {
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
-        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId }, handleSyncStatus);
       }, 500);
     }
   }, [storedPassword, initialized, activeProjectId]);
@@ -855,6 +874,56 @@ export default function WorkflowApp() {
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  // --- Auto-refresh from Firestore on tab visibility change ---
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      const now = Date.now();
+      // Minimum 10 seconds between checks
+      if (now - lastFirestoreCheckRef.current < 10000) return;
+      lastFirestoreCheckRef.current = now;
+
+      try {
+        const firestoreData = await loadFromFirestore();
+        if (firestoreData && firestoreData.lastSavedTimestamp) {
+          // Only refresh if Firestore has newer data than our last known timestamp
+          if (firestoreData.lastSavedTimestamp > lastSavedTimestampRef.current) {
+            lastSavedTimestampRef.current = firestoreData.lastSavedTimestamp;
+            if (firestoreData.projects && Array.isArray(firestoreData.projects) && firestoreData.projects.length > 0) {
+              // Update localStorage cache
+              localStorage.setItem('nexus-app-state', JSON.stringify(firestoreData.projects));
+              if (firestoreData.activeProjectId) localStorage.setItem('nexus-active-project', firestoreData.activeProjectId);
+              if (firestoreData.defaultProjectId) localStorage.setItem('nexus-default-project', firestoreData.defaultProjectId);
+              // Reload state from updated projects
+              setProjects(firestoreData.projects);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Auto-refresh from Firestore failed:', e);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkForUpdates();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Periodic check every 30 seconds while tab is visible
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        checkForUpdates();
+      }
+    }, 30000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -5287,6 +5356,27 @@ export default function WorkflowApp() {
             </div>
           </div>
         </>
+      )}
+
+      {/* --- Sync Status Indicator --- */}
+      {syncStatus !== 'idle' && (
+        <div className={`fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-[9999] transition-opacity duration-500 ${syncStatus === 'saved' ? 'opacity-60' : 'opacity-100'}`}>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg border backdrop-blur-sm ${
+            syncStatus === 'saving' ? 'bg-white/95 border-blue-200 text-blue-700' :
+            syncStatus === 'saved' ? 'bg-white/95 border-green-200 text-green-700' :
+            syncStatus === 'error' ? 'bg-white/95 border-orange-200 text-orange-700' :
+            'bg-white/95 border-slate-200 text-slate-600'
+          }`}>
+            {syncStatus === 'saving' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {syncStatus === 'saved' && <Cloud className="w-3.5 h-3.5" />}
+            {syncStatus === 'error' && <CloudOff className="w-3.5 h-3.5" />}
+            <span>
+              {syncStatus === 'saving' && 'Saving...'}
+              {syncStatus === 'saved' && 'Saved'}
+              {syncStatus === 'error' && 'Offline'}
+            </span>
+          </div>
+        </div>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
