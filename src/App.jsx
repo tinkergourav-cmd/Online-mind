@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
+import { saveToFirestore, loadFromFirestore } from './firestoreService';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -580,6 +581,22 @@ export default function WorkflowApp() {
   useEffect(() => {
     const init = async () => {
       try {
+        // Try loading from Firestore first (source of truth)
+        let firestoreData = null;
+        try {
+          firestoreData = await loadFromFirestore();
+        } catch (e) {
+          console.warn('Firestore load failed, falling back to localStorage', e);
+        }
+
+        if (firestoreData && firestoreData.projects && Array.isArray(firestoreData.projects) && firestoreData.projects.length > 0) {
+          // Use Firestore data - also update localStorage cache
+          localStorage.setItem('nexus-app-state', JSON.stringify(firestoreData.projects));
+          if (firestoreData.activeProjectId) localStorage.setItem('nexus-active-project', firestoreData.activeProjectId);
+          if (firestoreData.defaultProjectId) localStorage.setItem('nexus-default-project', firestoreData.defaultProjectId);
+        }
+        // Continue with existing localStorage loading logic below (which now has Firestore data cached)
+
         // Check for new project system first
         const savedAppState = localStorage.getItem('nexus-app-state');
         const savedActiveProject = localStorage.getItem('nexus-active-project');
@@ -809,6 +826,7 @@ export default function WorkflowApp() {
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
@@ -828,6 +846,7 @@ export default function WorkflowApp() {
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
       }, 500);
     }
   }, [storedPassword, initialized, activeProjectId]);

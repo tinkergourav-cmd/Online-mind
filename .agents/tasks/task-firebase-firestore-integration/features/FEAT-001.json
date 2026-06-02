@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Install firebase package and create Firebase initialization + Firestore service layer, then integrate into App.jsx to persist data to Firestore alongside existing localStorage logic.",
+  "status": "completed",
+  "steps": [
+    "Run 'npm install firebase' in /projects/sandbox/Online-mind to add the firebase SDK dependency.",
+    "Create /projects/sandbox/Online-mind/src/firebase.js that initializes Firebase with the provided config and exports the Firestore db instance. Use modular Firebase v9+ imports (import { initializeApp } from 'firebase/app'; import { getFirestore } from 'firebase/firestore').",
+    "Create /projects/sandbox/Online-mind/src/firestoreService.js with two exported functions: (1) saveToFirestore(data) - writes the full app state (projects array, activeProjectId, defaultProjectId) to Firestore document 'appData/main' using setDoc. Should be debounced internally at 2500ms using a module-level timer. Must catch errors gracefully (console.warn, never throw). (2) loadFromFirestore() - reads the 'appData/main' document using getDoc and returns the parsed data, or null if document doesn't exist or on error.",
+    "Modify the initialization useEffect in App.jsx (around line 580): Import firestoreService at the top of the file. In the init() function, BEFORE the existing localStorage logic, attempt to call loadFromFirestore(). If Firestore returns data, use it to populate state (same logic as the localStorage loading path). If Firestore fails or returns null, fall back to the existing localStorage loading logic. The existing localStorage code should remain intact as the fallback path.",
+    "Modify the auto-save useEffect in App.jsx (around line 795): After the existing debounced localStorage.setItem call inside the setTimeout callback, also call saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId }). The firestoreService handles its own debouncing so multiple rapid calls are fine.",
+    "Modify the password-change useEffect in App.jsx (around line 820): Similarly, after the existing debounced localStorage.setItem, call saveToFirestore with the current state.",
+    "Run 'npm run build' to verify the project compiles without errors."
+  ],
+  "acceptance_criteria": [
+    "firebase package is listed in package.json dependencies",
+    "src/firebase.js exists and exports a Firestore db instance initialized with the provided config",
+    "src/firestoreService.js exists with saveToFirestore and loadFromFirestore functions that handle errors gracefully",
+    "App.jsx initialization tries Firestore first, falls back to localStorage",
+    "App.jsx auto-save writes to both localStorage (500ms debounce) and Firestore (2500ms debounce)",
+    "All existing localStorage logic remains functional and unchanged in behavior",
+    "'npm run build' succeeds with no errors"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/Online-mind && npm run build' and confirm it exits with code 0 and produces dist/ output"
+  ],
+  "blocked_reason": null,
+  "findings": "Build succeeds cleanly. Firebase SDK adds ~663KB to the bundle (total JS). The firestoreService uses a module-level 2500ms debounce timer so rapid saves from the 500ms localStorage debounce are coalesced. defaultProjectId is accessible as component-level state in the save useEffects."
+}
