@@ -1,0 +1,19 @@
+{
+  "project_type": "React + Vite SPA with Tailwind CSS and Firebase Firestore",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite via npm scripts",
+  "test_framework": "No test framework configured (no test files or test dependencies in package.json)",
+  "build_command": "npm run build",
+  "test_command": "npm run build (no tests configured - build validation only)",
+  "verification_instructions": "Run 'npm run build' to verify the project compiles without errors",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/Online-mind && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access available. Node.js 22 available via nvm.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Project uses single-file architecture (most logic in App.jsx, ~5300 lines).",
+  "key_patterns": "1) All state lives in App.jsx as useState hooks. 2) Firestore save is debounced (500ms in App, 2500ms in firestoreService) via saveTimerRef. 3) UI uses Tailwind classes with responsive prefixes (sm:, md:). 4) Icons from lucide-react. 5) Toolbar is a <header> at h-10 with flex items-center. 6) Undo/Redo buttons are in a right-aligned div with class 'relative flex items-center gap-0.5 sm:gap-1 shrink-0'. 7) The save flow: App state changes -> useEffect triggers -> debounced localStorage write + saveToFirestore call -> firestoreService has its own 2500ms debounce before actual Firestore write.",
+  "relevant_files": [
+    "src/App.jsx",
+    "src/firestoreService.js"
+  ],
+  "directory_structure": "src/App.jsx - main component with all state and UI (~5300 lines), src/firestoreService.js - Firestore save/load with debounce, src/firebase.js - Firebase config, src/MiniMap.jsx - mini map component, src/TaskPanel.jsx - task panel component"
+}
