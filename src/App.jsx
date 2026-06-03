@@ -450,6 +450,8 @@ export default function WorkflowApp() {
   const logoTapRef = useRef({ count: 0, lastTap: 0 });
   const saveTimerRef = useRef(null);
   const projectsRef = useRef([]);
+  const [syncStatus, setSyncStatus] = useState('saved');
+  const [syncErrorDetail, setSyncErrorDetail] = useState('');
 
   // --- Touch Gesture Refs (Pinch-to-Zoom) ---
   const touchRef = useRef({ isPinching: false, lastDist: 0, lastMidX: 0, lastMidY: 0 });
@@ -823,10 +825,15 @@ export default function WorkflowApp() {
       });
       // Debounced localStorage write (outside state updater)
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      setSyncStatus('unsaved');
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
-        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId }, (status, error) => {
+          if (status === 'saving') setSyncStatus('saving');
+          else if (status === 'saved') { setSyncStatus('saved'); setSyncErrorDetail(''); }
+          else if (status === 'error') { setSyncStatus('error'); setSyncErrorDetail(error || 'Save failed'); }
+        });
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
@@ -843,10 +850,15 @@ export default function WorkflowApp() {
       });
       // Debounced localStorage write (outside state updater)
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      setSyncStatus('unsaved');
       saveTimerRef.current = setTimeout(() => {
         const currentProjects = projectsRef.current;
         localStorage.setItem('nexus-app-state', JSON.stringify(currentProjects));
-        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId });
+        saveToFirestore({ projects: currentProjects, activeProjectId, defaultProjectId }, (status, error) => {
+          if (status === 'saving') setSyncStatus('saving');
+          else if (status === 'saved') { setSyncStatus('saved'); setSyncErrorDetail(''); }
+          else if (status === 'error') { setSyncStatus('error'); setSyncErrorDetail(error || 'Save failed'); }
+        });
       }, 500);
     }
   }, [storedPassword, initialized, activeProjectId]);
@@ -3875,6 +3887,27 @@ export default function WorkflowApp() {
           <button onClick={performRedo} disabled={!canRedo} className={`p-1.5 rounded-lg transition-colors ${!canRedo ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'}`} title="Redo">
             <Redo2 className="w-4 h-4" />
           </button>
+
+          {/* Sync Status Indicator */}
+          <div className="flex items-center gap-1 px-1" title={syncStatus === 'error' ? syncErrorDetail : ''}>
+            <span className={`w-2 h-2 rounded-full shrink-0 ${
+              syncStatus === 'saved' ? 'bg-green-500' :
+              syncStatus === 'saving' ? 'bg-blue-500 animate-pulse' :
+              syncStatus === 'unsaved' ? 'bg-orange-400' :
+              'bg-red-500'
+            }`}></span>
+            <span className={`hidden sm:inline text-xs font-medium ${
+              syncStatus === 'saved' ? 'text-green-600' :
+              syncStatus === 'saving' ? 'text-blue-600' :
+              syncStatus === 'unsaved' ? 'text-orange-600' :
+              'text-red-600'
+            }`}>
+              {syncStatus === 'saved' ? 'Saved' :
+               syncStatus === 'saving' ? 'Saving...' :
+               syncStatus === 'unsaved' ? 'Unsaved' :
+               'Error'}
+            </span>
+          </div>
 
           <div className="w-px h-5 sm:h-6 bg-slate-200 mx-0.5 sm:mx-1"></div>
 

@@ -1,0 +1,7 @@
+{
+  "task_id": "task-sync-status-indicator",
+  "task_description": "Add a clear sync/save status indicator near the Undo/Redo buttons that shows whether data has been saved to Firestore. Must be visible and functional on all device sizes (mobile, tablet, desktop).",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

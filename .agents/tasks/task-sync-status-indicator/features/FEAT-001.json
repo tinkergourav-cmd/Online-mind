@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add a sync/save status indicator next to the Undo/Redo buttons that shows real-time Firestore save state (Saved, Saving..., Unsaved changes, Error) on both mobile and desktop layouts",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: Modify src/firestoreService.js to support status callbacks. Change saveToFirestore to accept an optional onStatus callback parameter and call it with states: 'saving' (when save starts), 'saved' (on success), 'error' (on failure). The function should return or expose these states so the calling component can track them.",
+    "Step 2: In src/App.jsx, add a new state variable for sync status: const [syncStatus, setSyncStatus] = useState('saved') with possible values: 'saved', 'saving', 'unsaved', 'error'. Add a syncErrorDetail state for error tooltip.",
+    "Step 3: Update the two useEffect blocks (around lines 820-850) that call saveToFirestore to integrate with the new status tracking: set status to 'unsaved' when state changes are detected (before the debounce fires), set to 'saving' when the actual Firestore write begins, set to 'saved' on success, set to 'error' on failure.",
+    "Step 4: Add the SyncStatusIndicator inline (or as a small component) in the toolbar, placed immediately AFTER the Redo2 button and BEFORE the vertical divider (the div with class 'w-px h-5 sm:h-6 bg-slate-200'). It should display: a green dot + 'Saved' text (or just green dot on very small screens), an animated spinner/dot + 'Saving...' text when saving, an orange dot + 'Unsaved' when changes are pending, a red dot + 'Error' with a title tooltip showing error detail on failure. Use Tailwind responsive classes to ensure it shows on all screen sizes - on mobile show just the colored dot indicator, on sm+ screens show dot + text label.",
+    "Step 5: Import the Cloud or CloudOff or CheckCircle2 icon from lucide-react if desired for a more polished look, OR use simple colored dots (w-2 h-2 rounded-full) which is simpler and still clear. The indicator should have a subtle pulse/ping animation on the dot when in 'saving' state using Tailwind animate-pulse.",
+    "Step 6: Ensure the indicator is responsive - visible and functional on all device sizes. On very small screens (< sm), show only the colored status dot. On sm+ screens, show dot + short text label. The flex container already has gap-0.5 sm:gap-1 which will naturally space it."
+  ],
+  "acceptance_criteria": [
+    "A sync status indicator is visible next to the Undo/Redo buttons in the toolbar header",
+    "The indicator shows 'Saved' (green) when data is successfully synced to Firestore",
+    "The indicator shows 'Saving...' (blue/animated) when a Firestore write is in progress",
+    "The indicator shows 'Unsaved' (orange) when local changes exist that haven't been saved yet",
+    "The indicator shows 'Error' (red) if the Firestore save fails, with error details on hover",
+    "The indicator is visible on both mobile and desktop screen sizes (responsive)",
+    "npm run build completes successfully with no errors"
+  ],
+  "verification": [
+    "Run 'npm run build' in /projects/sandbox/Online-mind and confirm it completes with exit code 0 and no errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
