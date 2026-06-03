@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
-import { saveToFirestore, loadFromFirestore } from './firestoreService';
+import { saveToFirestore, loadFromFirestore, retrySave } from './firestoreService';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -450,8 +450,9 @@ export default function WorkflowApp() {
   const logoTapRef = useRef({ count: 0, lastTap: 0 });
   const saveTimerRef = useRef(null);
   const projectsRef = useRef([]);
-  const [syncStatus, setSyncStatus] = useState('saved');
+  const [syncStatus, setSyncStatus] = useState('loading');
   const [syncErrorDetail, setSyncErrorDetail] = useState('');
+  const retryTimerRef = useRef(null);
 
   // --- Touch Gesture Refs (Pinch-to-Zoom) ---
   const touchRef = useRef({ isPinching: false, lastDist: 0, lastMidX: 0, lastMidY: 0 });
@@ -585,10 +586,14 @@ export default function WorkflowApp() {
       try {
         // Try loading from Firestore first (source of truth)
         let firestoreData = null;
+        setSyncStatus('loading');
         try {
           firestoreData = await loadFromFirestore();
+          setSyncStatus('saved');
         } catch (e) {
           console.warn('Firestore load failed, falling back to localStorage', e);
+          setSyncStatus('error');
+          setSyncErrorDetail(e.message || 'Load failed');
         }
 
         if (firestoreData && firestoreData.projects && Array.isArray(firestoreData.projects) && firestoreData.projects.length > 0) {
@@ -867,8 +872,22 @@ export default function WorkflowApp() {
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, []);
+
+  // Auto-retry on error after 30 seconds
+  useEffect(() => {
+    if (syncStatus === 'error') {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => {
+        retrySave();
+      }, 30000);
+    } else {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, [syncStatus]);
 
   useEffect(() => {
     setFocusedNodeId(null);
@@ -3892,18 +3911,19 @@ export default function WorkflowApp() {
           <div className="flex items-center gap-1 px-1" title={syncStatus === 'error' ? syncErrorDetail : ''}>
             <span className={`w-2 h-2 rounded-full shrink-0 ${
               syncStatus === 'saved' ? 'bg-green-500' :
-              syncStatus === 'saving' ? 'bg-blue-500 animate-pulse' :
+              syncStatus === 'saving' || syncStatus === 'loading' ? 'bg-blue-500 animate-pulse' :
               syncStatus === 'unsaved' ? 'bg-orange-400' :
               'bg-red-500'
             }`}></span>
             <span className={`hidden sm:inline text-xs font-medium ${
               syncStatus === 'saved' ? 'text-green-600' :
-              syncStatus === 'saving' ? 'text-blue-600' :
+              syncStatus === 'saving' || syncStatus === 'loading' ? 'text-blue-600' :
               syncStatus === 'unsaved' ? 'text-orange-600' :
               'text-red-600'
             }`}>
               {syncStatus === 'saved' ? 'Saved' :
                syncStatus === 'saving' ? 'Saving...' :
+               syncStatus === 'loading' ? 'Loading...' :
                syncStatus === 'unsaved' ? 'Unsaved' :
                'Error'}
             </span>
