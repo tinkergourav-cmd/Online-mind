@@ -1397,34 +1397,50 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleNewCardKey);
   }, []);
 
-  // --- C key connects two selected objects ---
+  // --- C key toggles clone panel ---
   useEffect(() => {
-    const handleConnectKey = (e) => {
+    const handleCloneKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
       if (e.key === 'c' || e.key === 'C') {
-        if (selectedNodeIds.length < 2) return;
         e.preventDefault();
-        if (selectedNodeIds.length === 2) {
-          const [sourceId, targetId] = selectedNodeIds;
-          const currentEdges = stateRef.current.workspaces.find(w => w.id === stateRef.current.activeTab)?.edges || [];
-          const exists = currentEdges.some(edge => (edge.source === sourceId && edge.target === targetId) || (edge.source === targetId && edge.target === sourceId));
-          if (!exists) {
-            takeSnapshot();
-            updateActiveWorkspace(ws => ({ edges: [...ws.edges, { id: `e-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, source: sourceId, target: targetId }] }));
-            showToast('Connected');
-          } else {
-            showToast('Already connected');
-          }
-          setSelectedNodeIds([]);
-        } else {
-          showToast('Select only 2 objects');
+        setShowClonePanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleCloneKey);
+    return () => window.removeEventListener('keydown', handleCloneKey);
+  }, []);
+
+  // --- A key toggles alarm/timer panel ---
+  useEffect(() => {
+    const handleAlarmKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        setShowTimer(prev => !prev);
+        if (timerDone) setTimerDone(false);
+      }
+    };
+    window.addEventListener('keydown', handleAlarmKey);
+    return () => window.removeEventListener('keydown', handleAlarmKey);
+  }, [timerDone]);
+
+  // --- E key toggles edit card panel ---
+  useEffect(() => {
+    const handleEditKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        if (focusedNodeId) {
+          setEditingTextNode(prev => prev === focusedNodeId ? null : focusedNodeId);
         }
       }
     };
-    window.addEventListener('keydown', handleConnectKey);
-    return () => window.removeEventListener('keydown', handleConnectKey);
-  }, [selectedNodeIds, takeSnapshot, updateActiveWorkspace, showToast]);
+    window.addEventListener('keydown', handleEditKey);
+    return () => window.removeEventListener('keydown', handleEditKey);
+  }, [focusedNodeId]);
 
   // --- Arrow key movement for selected nodes ---
   useEffect(() => {
